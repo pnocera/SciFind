@@ -1,10 +1,8 @@
 # SciFind 🧪
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/scifind/backend)](https://goreportcard.com/report/github.com/scifind/backend)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/r/scifind/backend)
 [![Go Version](https://img.shields.io/badge/go-1.24+-00ADD8.svg)](https://golang.org/dl/)
-[![Tests](https://github.com/scifind/backend/workflows/tests/badge.svg)](https://github.com/scifind/backend/actions)
 
 > **Next-generation scientific paper search and discovery platform** - Unified API for searching across multiple academic databases with AI-ready integration
 
