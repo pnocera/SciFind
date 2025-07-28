@@ -86,8 +86,6 @@ For detailed setup instructions, see our [Quick Start Guide](docs/QUICKSTART.md)
 
 ## 📚 Documentation
 
-We provide comprehensive documentation for all user types:
-
 ### 📖 [Quick Start Guide](docs/QUICKSTART.md)
 Perfect for getting started quickly with Docker or local development.
 

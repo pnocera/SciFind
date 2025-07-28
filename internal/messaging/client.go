@@ -42,7 +42,11 @@ func NewClient(cfg config.NATSConfig, logger *slog.Logger) (*Client, error) {
 		nats.ReconnectWait(reconnectWait),
 		nats.MaxReconnects(cfg.MaxReconnects),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			logger.Warn("NATS disconnected", slog.String("error", err.Error()))
+			if err != nil {
+				logger.Warn("NATS disconnected", slog.String("error", err.Error()))
+			} else {
+				logger.Info("NATS disconnected gracefully")
+			}
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			logger.Info("NATS reconnected", slog.String("url", nc.ConnectedUrl()))

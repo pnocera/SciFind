@@ -278,12 +278,52 @@ func setDefaults() {
 	viper.SetDefault("nats.max_reconnects", 10)
 	viper.SetDefault("nats.reconnect_wait", "2s")
 	viper.SetDefault("nats.timeout", "5s")
+	
+	// Embedded NATS server defaults
+	viper.SetDefault("nats.embedded.enabled", false)
+	viper.SetDefault("nats.embedded.host", "0.0.0.0")
+	viper.SetDefault("nats.embedded.port", 4222)
+	viper.SetDefault("nats.embedded.log_level", "INFO")
+	viper.SetDefault("nats.embedded.log_file", "")
+	viper.SetDefault("nats.embedded.cluster.name", "scifind-cluster")
+	viper.SetDefault("nats.embedded.cluster.host", "0.0.0.0")
+	viper.SetDefault("nats.embedded.cluster.port", 6222)
+	viper.SetDefault("nats.embedded.cluster.routes", []string{})
+	viper.SetDefault("nats.embedded.gateway.name", "scifind-gateway")
+	viper.SetDefault("nats.embedded.gateway.host", "0.0.0.0")
+	viper.SetDefault("nats.embedded.gateway.port", 7222)
+	viper.SetDefault("nats.embedded.monitor.host", "0.0.0.0")
+	viper.SetDefault("nats.embedded.monitor.port", 8222)
+	viper.SetDefault("nats.embedded.accounts.system_account", "$SYS")
+	viper.SetDefault("nats.embedded.limits.max_connections", 10000)
+	viper.SetDefault("nats.embedded.limits.max_payload", "1MB")
+	viper.SetDefault("nats.embedded.limits.max_pending", "64MB")
+	
+	// NATS TLS defaults
+	viper.SetDefault("nats.tls.enabled", false)
+	viper.SetDefault("nats.tls.cert_file", "")
+	viper.SetDefault("nats.tls.key_file", "")
+	viper.SetDefault("nats.tls.ca_file", "")
+	viper.SetDefault("nats.tls.verify_and_map", false)
+	viper.SetDefault("nats.tls.insecure_skip_verify", false)
+	viper.SetDefault("nats.tls.client_auth.enabled", false)
+	viper.SetDefault("nats.tls.client_auth.cert_file", "")
+	viper.SetDefault("nats.tls.client_auth.key_file", "")
+	
+	// JetStream defaults
 	viper.SetDefault("nats.jetstream.enabled", true)
+	viper.SetDefault("nats.jetstream.domain", "")
+	viper.SetDefault("nats.jetstream.store_dir", "./jetstream")
 	viper.SetDefault("nats.jetstream.max_memory", "1GB")
 	viper.SetDefault("nats.jetstream.max_storage", "10GB")
+	viper.SetDefault("nats.jetstream.sync_interval", "2m")
+	
+	// Key-Value store defaults
 	viper.SetDefault("nats.kv_store.enabled", true)
 	viper.SetDefault("nats.kv_store.bucket", "scifind-cache")
 	viper.SetDefault("nats.kv_store.ttl", "1h")
+	
+	// Object store defaults
 	viper.SetDefault("nats.object_store.enabled", true)
 	viper.SetDefault("nats.object_store.bucket", "scifind-objects")
 
@@ -371,20 +411,75 @@ type NATSConfig struct {
 	PingInterval    int      `mapstructure:"ping_interval"` // seconds
 	MaxPingsOut     int      `mapstructure:"max_pings_out"`
 	
+	// Embedded server configuration
+	Embedded struct {
+		Enabled    bool   `mapstructure:"enabled"`
+		Host       string `mapstructure:"host"`
+		Port       int    `mapstructure:"port"`
+		LogLevel   string `mapstructure:"log_level"`
+		LogFile    string `mapstructure:"log_file"`
+		
+		// Clustering configuration
+		Cluster struct {
+			Name   string   `mapstructure:"name"`
+			Host   string   `mapstructure:"host"`
+			Port   int      `mapstructure:"port"`
+			Routes []string `mapstructure:"routes"`
+		} `mapstructure:"cluster"`
+		
+		// Gateway configuration for super clusters
+		Gateway struct {
+			Name string   `mapstructure:"name"`
+			Host string   `mapstructure:"host"`
+			Port int      `mapstructure:"port"`
+		} `mapstructure:"gateway"`
+		
+		// Monitoring configuration
+		Monitor struct {
+			Host string `mapstructure:"host"`
+			Port int    `mapstructure:"port"`
+		} `mapstructure:"monitor"`
+		
+		// Accounts configuration
+		Accounts struct {
+			SystemAccount string `mapstructure:"system_account"`
+		} `mapstructure:"accounts"`
+		
+		// Resource limits
+		Limits struct {
+			MaxConnections int    `mapstructure:"max_connections"`
+			MaxPayload     string `mapstructure:"max_payload"`
+			MaxPending     string `mapstructure:"max_pending"`
+		} `mapstructure:"limits"`
+	} `mapstructure:"embedded"`
+	
 	// TLS configuration
 	TLS struct {
-		Enabled  bool   `mapstructure:"enabled"`
-		CertFile string `mapstructure:"cert_file"`
-		KeyFile  string `mapstructure:"key_file"`
-		CAFile   string `mapstructure:"ca_file"`
+		Enabled            bool   `mapstructure:"enabled"`
+		CertFile          string `mapstructure:"cert_file"`
+		KeyFile           string `mapstructure:"key_file"`
+		CAFile            string `mapstructure:"ca_file"`
+		VerifyAndMap      bool   `mapstructure:"verify_and_map"`
+		InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
+		CertStore         string `mapstructure:"cert_store"`
+		CertStoreType     string `mapstructure:"cert_store_type"`
+		
+		// mTLS (Mutual TLS) configuration
+		ClientAuth struct {
+			Enabled  bool   `mapstructure:"enabled"`
+			CertFile string `mapstructure:"cert_file"`
+			KeyFile  string `mapstructure:"key_file"`
+		} `mapstructure:"client_auth"`
 	} `mapstructure:"tls"`
 	
 	// JetStream configuration
 	JetStream struct {
 		Enabled       bool   `mapstructure:"enabled"`
 		Domain        string `mapstructure:"domain"`
+		StoreDir      string `mapstructure:"store_dir"`
 		MaxMemory     string `mapstructure:"max_memory"`
 		MaxStorage    string `mapstructure:"max_storage"`
+		SyncInterval  string `mapstructure:"sync_interval"`
 	} `mapstructure:"jetstream"`
 	
 	// Key-Value store configuration

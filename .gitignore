@@ -5,9 +5,7 @@
 *.dll
 *.so
 *.dylib
-server
 scifind-backend
-cmd/server/server
 
 # Test binary, built with `go test -c`
 *.test
@@ -43,6 +41,7 @@ Thumbs.db
 .env.development
 .env.test
 .env.production
+config.yaml
 
 # Configuration files with secrets
 config/production.yaml
@@ -148,6 +147,12 @@ search-cache/
 paper-cache/
 citation-cache/
 
+
+# prompts and reports
+0-ins/
+1-reqs/
+2-reports/
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
@@ -162,12 +167,13 @@ memory/agents/*
 coordination/memory_bank/*
 coordination/subtasks/*
 coordination/orchestration/*
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
 claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
-
-# prompts and reports
-0-ins/
-1-reqs/
-2-reports/
