@@ -1,4 +1,8 @@
-# SciFIND Backend
+# SciFIND
+
+<div align="center">
+  <img src="docs/scifind.png" alt="SciFIND Logo" width="300">
+</div>
 
 A Go-based REST API for scientific literature search across multiple academic databases.
 
