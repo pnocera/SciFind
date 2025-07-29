@@ -1,0 +1,1134 @@
+basePath: /
+definitions:
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  internal_api_handlers.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+      request_id:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  scifind-backend_internal_models.Author:
+    properties:
+      affiliation:
+        maxLength: 500
+        type: string
+      citation_count:
+        minimum: 0
+        type: integer
+      created_at:
+        description: Timestamps
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        maxLength: 255
+        type: string
+      h_index:
+        minimum: 0
+        type: integer
+      id:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      orcid:
+        type: string
+      paper_count:
+        description: Metrics
+        minimum: 0
+        type: integer
+      papers:
+        description: Relationships
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Paper'
+        type: array
+      research_areas:
+        description: Research profile
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      website:
+        maxLength: 2048
+        type: string
+    required:
+    - id
+    - name
+    type: object
+  scifind-backend_internal_models.Category:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Category'
+        type: array
+      created_at:
+        description: Timestamps
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        maxLength: 1000
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      level:
+        maximum: 10
+        minimum: 0
+        type: integer
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      paper_count:
+        description: Usage statistics
+        minimum: 0
+        type: integer
+      papers:
+        description: Relationships
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Paper'
+        type: array
+      parent:
+        allOf:
+        - $ref: '#/definitions/scifind-backend_internal_models.Category'
+        description: Hierarchy relationships
+      parent_id:
+        type: string
+      source:
+        description: Classification metadata
+        enum:
+        - arxiv
+        - acm
+        - ieee
+        - manual
+        type: string
+      source_code:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - id
+    - name
+    - source
+    - source_code
+    type: object
+  scifind-backend_internal_models.Paper:
+    properties:
+      abstract:
+        maxLength: 10000
+        type: string
+      arxiv_id:
+        type: string
+      authors:
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Author'
+        minItems: 1
+        type: array
+      categories:
+        description: Classification and metrics
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Category'
+        type: array
+      citation_count:
+        description: Citation metrics
+        minimum: 0
+        type: integer
+      citations:
+        items:
+          type: string
+        type: array
+      created_at:
+        description: Timestamps
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      doi:
+        type: string
+      extracted_data:
+        type: string
+      full_text:
+        description: Content analysis
+        type: string
+      id:
+        description: Primary identifiers
+        type: string
+      issue:
+        maxLength: 50
+        type: string
+      journal:
+        description: Publication details
+        maxLength: 500
+        type: string
+      keywords:
+        items:
+          type: string
+        type: array
+      language:
+        type: string
+      pages:
+        maxLength: 100
+        type: string
+      pdf_url:
+        maxLength: 2048
+        type: string
+      processing_state:
+        enum:
+        - pending
+        - processing
+        - completed
+        - failed
+        type: string
+      published_at:
+        type: string
+      quality_score:
+        description: Quality and processing
+        maximum: 1
+        minimum: 0
+        type: number
+      references:
+        items:
+          type: string
+        type: array
+      source_id:
+        type: string
+      source_provider:
+        description: Source tracking
+        enum:
+        - arxiv
+        - semantic_scholar
+        - exa
+        - tavily
+        - manual
+        type: string
+      source_url:
+        type: string
+      title:
+        description: Core metadata
+        maxLength: 1000
+        minLength: 1
+        type: string
+      updated_at:
+        type: string
+      url:
+        description: URLs and access
+        maxLength: 2048
+        type: string
+      volume:
+        maxLength: 50
+        type: string
+    required:
+    - authors
+    - id
+    - language
+    - source_id
+    - source_provider
+    - title
+    type: object
+  scifind-backend_internal_providers.CacheConfig:
+    properties:
+      enabled:
+        type: boolean
+      key_prefix:
+        type: string
+      max_size:
+        type: integer
+      ttl:
+        $ref: '#/definitions/time.Duration'
+    type: object
+  scifind-backend_internal_providers.CircuitBreakerConfig:
+    properties:
+      failure_threshold:
+        type: integer
+      interval:
+        $ref: '#/definitions/time.Duration'
+      max_requests:
+        type: integer
+      success_threshold:
+        type: integer
+      timeout:
+        $ref: '#/definitions/time.Duration'
+    type: object
+  scifind-backend_internal_providers.ProviderConfig:
+    properties:
+      api_key:
+        type: string
+      api_secret:
+        type: string
+      base_url:
+        description: API configuration
+        type: string
+      cache:
+        allOf:
+        - $ref: '#/definitions/scifind-backend_internal_providers.CacheConfig'
+        description: Caching
+      circuit_breaker:
+        allOf:
+        - $ref: '#/definitions/scifind-backend_internal_providers.CircuitBreakerConfig'
+        description: Circuit breaker
+      custom:
+        additionalProperties: true
+        description: Custom settings
+        type: object
+      enabled:
+        type: boolean
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      max_retries:
+        type: integer
+      name:
+        description: Basic config
+        type: string
+      rate_limit:
+        allOf:
+        - $ref: '#/definitions/scifind-backend_internal_providers.RateLimitConfig'
+        description: Rate limiting
+      retry_delay:
+        $ref: '#/definitions/time.Duration'
+      timeout:
+        allOf:
+        - $ref: '#/definitions/time.Duration'
+        description: Timeouts
+    type: object
+  scifind-backend_internal_providers.ProviderError:
+    properties:
+      error: {}
+      provider:
+        type: string
+      retryable:
+        type: boolean
+      type:
+        description: timeout, rate_limit, network, parse, etc.
+        type: string
+    type: object
+  scifind-backend_internal_providers.ProviderMetrics:
+    properties:
+      avg_response_time:
+        allOf:
+        - $ref: '#/definitions/time.Duration'
+        description: Performance metrics
+      avg_results_per_query:
+        type: number
+      cached_requests:
+        type: integer
+      circuit_close_count:
+        type: integer
+      circuit_open_count:
+        description: Circuit breaker
+        type: integer
+      failed_requests:
+        type: integer
+      max_response_time:
+        $ref: '#/definitions/time.Duration'
+      min_response_time:
+        $ref: '#/definitions/time.Duration'
+      network_errors:
+        type: integer
+      p95_response_time:
+        $ref: '#/definitions/time.Duration'
+      parse_errors:
+        type: integer
+      rate_limit_errors:
+        type: integer
+      rate_limit_hits:
+        description: Rate limiting
+        type: integer
+      rate_limit_resets:
+        type: integer
+      successful_requests:
+        type: integer
+      timeout_errors:
+        description: Error statistics
+        type: integer
+      total_requests:
+        description: Request statistics
+        type: integer
+      total_results:
+        description: Result statistics
+        type: integer
+      window_end:
+        type: string
+      window_start:
+        description: Time window
+        type: string
+    type: object
+  scifind-backend_internal_providers.ProviderStatus:
+    properties:
+      api_version:
+        description: Versioning
+        type: string
+      avg_response_time:
+        allOf:
+        - $ref: '#/definitions/time.Duration'
+        description: Performance
+      circuit_state:
+        type: string
+      enabled:
+        type: boolean
+      healthy:
+        type: boolean
+      last_check:
+        type: string
+      last_error: {}
+      last_updated:
+        type: string
+      name:
+        type: string
+      rate_limited:
+        description: Rate limiting
+        type: boolean
+      reset_time:
+        type: string
+      success_rate:
+        type: number
+    type: object
+  scifind-backend_internal_providers.RateLimitConfig:
+    properties:
+      backoff_duration:
+        $ref: '#/definitions/time.Duration'
+      burst_size:
+        type: integer
+      requests_per_hour:
+        type: integer
+      requests_per_minute:
+        type: integer
+      requests_per_second:
+        type: integer
+    type: object
+  scifind-backend_internal_services.PaperResponse:
+    properties:
+      paper:
+        $ref: '#/definitions/scifind-backend_internal_models.Paper'
+      source:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  scifind-backend_internal_services.ProviderConfigResponse:
+    properties:
+      message:
+        type: string
+      provider_name:
+        type: string
+      status:
+        $ref: '#/definitions/scifind-backend_internal_providers.ProviderStatus'
+      timestamp:
+        type: string
+    type: object
+  scifind-backend_internal_services.ProviderMetricsResponse:
+    properties:
+      end_time:
+        type: string
+      providers:
+        additionalProperties:
+          $ref: '#/definitions/scifind-backend_internal_providers.ProviderMetrics'
+        type: object
+      start_time:
+        type: string
+      time_range:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  scifind-backend_internal_services.ProviderStatusResponse:
+    properties:
+      providers:
+        additionalProperties:
+          $ref: '#/definitions/scifind-backend_internal_providers.ProviderStatus'
+        type: object
+      timestamp:
+        type: string
+    type: object
+  scifind-backend_internal_services.SearchResponse:
+    properties:
+      aggregation_strategy:
+        type: string
+      cache_hits:
+        type: integer
+      duration:
+        $ref: '#/definitions/time.Duration'
+      errors:
+        items:
+          $ref: '#/definitions/scifind-backend_internal_providers.ProviderError'
+        type: array
+      papers:
+        items:
+          $ref: '#/definitions/scifind-backend_internal_models.Paper'
+        type: array
+      partial_failure:
+        type: boolean
+      providers_failed:
+        items:
+          type: string
+        type: array
+      providers_used:
+        items:
+          type: string
+        type: array
+      query:
+        type: string
+      request_id:
+        type: string
+      result_count:
+        type: integer
+      timestamp:
+        type: string
+      total_count:
+        type: integer
+    type: object
+  time.Duration:
+    enum:
+    - -9223372036854775808
+    - 9223372036854775807
+    - 1
+    - 1000
+    - 1000000
+    - 1000000000
+    - 60000000000
+    - 3600000000000
+    format: int64
+    type: integer
+    x-enum-varnames:
+    - minDuration
+    - maxDuration
+    - Nanosecond
+    - Microsecond
+    - Millisecond
+    - Second
+    - Minute
+    - Hour
+host: localhost:8080
+info:
+  contact:
+    email: support@scifind.ai
+    name: SciFIND Support
+    url: https://scifind.ai/support
+  description: This is the main API server for SciFIND, a scientific literature discovery
+    platform. It provides endpoints for searching academic papers across multiple
+    providers, managing papers and authors, and retrieving scientific literature metadata.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://scifind.ai/terms
+  title: SciFIND Backend API
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns comprehensive health status for all system components
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Health status\
+          schema:
+            type: string
+      summary: Full health check
+      tags:
+      - health
+  /health/live:
+    get:
+      consumes:
+      - application/json
+      description: Returns a simple liveness probe to verify the service is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liveness status\
+          schema:
+            type: string
+      summary: Liveness check
+      tags:
+      - health
+  /health/ready:
+    get:
+      consumes:
+      - application/json
+      description: Returns readiness status including dependencies health
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Health status\
+          schema:
+            type: string
+        "503":
+          description: Health status\
+          schema:
+            type: string
+      summary: Readiness check
+      tags:
+      - health
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Returns a simple liveness probe to verify the service is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Liveness status\
+          schema:
+            type: string
+      summary: Liveness check
+      tags:
+      - health
+  /v1/authors:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of authors with optional search
+      parameters:
+      - description: 'Number of results to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of results to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      - description: Search query for author names
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of authors with pagination info
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: List authors
+      tags:
+      - authors
+  /v1/authors/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific author by their ID
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Author details
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get an author by ID
+      tags:
+      - authors
+  /v1/authors/{id}/papers:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of papers by a specific author
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Number of results to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of results to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Author papers with pagination info
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get papers by an author
+      tags:
+      - authors
+  /v1/papers:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of papers
+      parameters:
+      - description: 'Number of results to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of results to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of papers with pagination info
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: List papers
+      tags:
+      - papers
+    post:
+      consumes:
+      - application/json
+      description: Create a new paper (currently not implemented)
+      parameters:
+      - description: Paper data
+        in: body
+        name: paper
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created paper
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "501":
+          description: Not Implemented
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+            type: object
+      summary: Create a new paper
+      tags:
+      - papers
+  /v1/papers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a paper (currently not implemented)
+      parameters:
+      - description: Paper ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "501":
+          description: Not Implemented
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Delete a paper
+      tags:
+      - papers
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific paper by its ID
+      parameters:
+      - description: Paper ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Paper details
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Get a paper by ID
+      tags:
+      - papers
+    put:
+      consumes:
+      - application/json
+      description: Update an existing paper (currently not implemented)
+      parameters:
+      - description: Paper ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated paper data
+        in: body
+        name: paper
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated paper
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "501":
+          description: Not Implemented
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      summary: Update a paper
+      tags:
+      - papers
+  /v1/search:
+    get:
+      consumes:
+      - application/json
+      description: Search for academic papers across multiple providers
+      parameters:
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      - description: 'Number of results to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of results to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      - description: Comma-separated list of providers (arxiv,semantic_scholar,exa,tavily)
+        in: query
+        name: providers
+        type: string
+      - description: Start date filter (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: End date filter (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Author filter
+        in: query
+        name: author
+        type: string
+      - description: Journal filter
+        in: query
+        name: journal
+        type: string
+      - description: Category filter
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scifind-backend_internal_services.SearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+      summary: Search for academic papers
+      tags:
+      - search
+  /v1/search/papers/{provider}/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific paper by provider name and paper ID
+      parameters:
+      - description: Provider name
+        enum:
+        - arxiv
+        - semantic_scholar
+        - exa
+        - tavily
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Paper ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scifind-backend_internal_services.PaperResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+      summary: Get a specific paper
+      tags:
+      - search
+  /v1/search/providers:
+    get:
+      consumes:
+      - application/json
+      description: Get information about available search providers and their status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scifind-backend_internal_services.ProviderStatusResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+      summary: Get available search providers
+      tags:
+      - search
+  /v1/search/providers/{provider}/configure:
+    put:
+      consumes:
+      - application/json
+      description: Update the configuration of a specific search provider
+      parameters:
+      - description: Provider name
+        enum:
+        - arxiv
+        - semantic_scholar
+        - exa
+        - tavily
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Provider configuration
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/scifind-backend_internal_providers.ProviderConfig'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scifind-backend_internal_services.ProviderConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+      summary: Configure a search provider
+      tags:
+      - search
+  /v1/search/providers/metrics:
+    get:
+      consumes:
+      - application/json
+      description: Get performance metrics for search providers
+      parameters:
+      - description: Specific provider name
+        in: query
+        name: provider
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scifind-backend_internal_services.ProviderMetricsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_api_handlers.ErrorResponse'
+      summary: Get search provider metrics
+      tags:
+      - search
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    description: API key for authentication
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

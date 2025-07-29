@@ -4,7 +4,10 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
 	
+	_ "scifind-backend/docs"
 	"scifind-backend/internal/api/handlers"
 	"scifind-backend/internal/api/middleware"
 	"scifind-backend/internal/services"
@@ -71,11 +74,19 @@ func NewRouter(
 		}
 	}
 
-	// Documentation endpoint
+	// Swagger documentation endpoints
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(301, "/swagger/index.html")
+	})
+	
+	// Legacy documentation endpoint (redirect to Swagger)
 	router.GET("/docs", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "SciFIND API Documentation",
 			"version": "1.0.0",
+			"swagger_ui": "/swagger/index.html",
+			"openapi_spec": "/swagger/doc.json",
 			"endpoints": gin.H{
 				"health":  "/health",
 				"search":  "/v1/search",

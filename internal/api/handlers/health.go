@@ -56,6 +56,14 @@ type CheckResult struct {
 var startTime = time.Now()
 
 // Liveness returns a simple liveness check
+// @Summary Liveness check
+// @Description Returns a simple liveness probe to verify the service is running
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {string} string \"Liveness status\"
+// @Router /health/live [get]
+// @Router /ping [get]
 func (h *HealthHandler) Liveness(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "alive",
@@ -65,6 +73,14 @@ func (h *HealthHandler) Liveness(c *gin.Context) {
 }
 
 // Readiness returns a comprehensive readiness check
+// @Summary Readiness check
+// @Description Returns readiness status including dependencies health
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {string} string \"Health status\"
+// @Failure 503 {string} string \"Health status\"
+// @Router /health/ready [get]
 func (h *HealthHandler) Readiness(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -113,6 +129,13 @@ func (h *HealthHandler) Readiness(c *gin.Context) {
 }
 
 // Health returns comprehensive health information
+// @Summary Full health check
+// @Description Returns comprehensive health status for all system components
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {string} string \"Health status\"
+// @Router /health [get]
 func (h *HealthHandler) Health(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()

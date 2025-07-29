@@ -24,6 +24,17 @@ func NewPaperHandler(paperService services.PaperServiceInterface, logger *slog.L
 }
 
 // ListPapers handles GET /v1/papers
+// @Summary List papers
+// @Description Get a paginated list of papers
+// @Tags papers
+// @Accept json
+// @Produce json
+// @Param limit query int false "Number of results to return (default: 20, max: 100)"
+// @Param offset query int false "Number of results to skip (default: 0)"
+// @Success 200 {string} string "List of papers with pagination info"
+// @Failure 400 {object} object{error=string}
+// @Failure 500 {object} object{error=string}
+// @Router /v1/papers [get]
 func (h *PaperHandler) ListPapers(c *gin.Context) {
 	// Parse query parameters
 	limitStr := c.DefaultQuery("limit", "20")
@@ -64,6 +75,17 @@ func (h *PaperHandler) ListPapers(c *gin.Context) {
 }
 
 // GetPaper handles GET /v1/papers/:id
+// @Summary Get a paper by ID
+// @Description Retrieve a specific paper by its ID
+// @Tags papers
+// @Accept json
+// @Produce json
+// @Param id path string true "Paper ID"
+// @Success 200 {string} string "Paper details"
+// @Failure 400 {object} object{error=string}
+// @Failure 404 {object} object{error=string}
+// @Failure 500 {object} object{error=string}
+// @Router /v1/papers/{id} [get]
 func (h *PaperHandler) GetPaper(c *gin.Context) {
 	paperID := c.Param("id")
 	if paperID == "" {
@@ -89,6 +111,16 @@ func (h *PaperHandler) GetPaper(c *gin.Context) {
 }
 
 // CreatePaper handles POST /v1/papers
+// @Summary Create a new paper
+// @Description Create a new paper (currently not implemented)
+// @Tags papers
+// @Accept json
+// @Produce json
+// @Param paper body string true "Paper data"
+// @Success 201 {string} string "Created paper"
+// @Failure 400 {object} object{error=string}
+// @Failure 501 {object} object{error=string,message=string}
+// @Router /v1/papers [post]
 func (h *PaperHandler) CreatePaper(c *gin.Context) {
 	// TODO: Implement paper creation
 	// This would typically be used for manual paper entry
@@ -101,6 +133,18 @@ func (h *PaperHandler) CreatePaper(c *gin.Context) {
 }
 
 // UpdatePaper handles PUT /v1/papers/:id
+// @Summary Update a paper
+// @Description Update an existing paper (currently not implemented)
+// @Tags papers
+// @Accept json
+// @Produce json
+// @Param id path string true "Paper ID"
+// @Param paper body string true "Updated paper data"
+// @Success 200 {string} string "Updated paper"
+// @Failure 400 {object} object{error=string}
+// @Failure 404 {object} object{error=string}
+// @Failure 501 {object} object{error=string}
+// @Router /v1/papers/{id} [put]
 func (h *PaperHandler) UpdatePaper(c *gin.Context) {
 	// TODO: Implement paper update
 	// This would allow updating paper metadata, quality scores, etc.
@@ -111,6 +155,17 @@ func (h *PaperHandler) UpdatePaper(c *gin.Context) {
 }
 
 // DeletePaper handles DELETE /v1/papers/:id
+// @Summary Delete a paper
+// @Description Delete a paper (currently not implemented)
+// @Tags papers
+// @Accept json
+// @Produce json
+// @Param id path string true "Paper ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} object{error=string}
+// @Failure 404 {object} object{error=string}
+// @Failure 501 {object} object{error=string}
+// @Router /v1/papers/{id} [delete]
 func (h *PaperHandler) DeletePaper(c *gin.Context) {
 	// TODO: Implement paper deletion
 	// This should be restricted and logged carefully

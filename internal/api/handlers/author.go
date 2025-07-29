@@ -25,6 +25,18 @@ func NewAuthorHandler(authorService *services.AuthorService, logger *slog.Logger
 }
 
 // ListAuthors handles GET /v1/authors
+// @Summary List authors
+// @Description Get a paginated list of authors with optional search
+// @Tags authors
+// @Accept json
+// @Produce json
+// @Param limit query int false "Number of results to return (default: 20, max: 100)"
+// @Param offset query int false "Number of results to skip (default: 0)"
+// @Param q query string false "Search query for author names"
+// @Success 200 {string} string "List of authors with pagination info"
+// @Failure 400 {object} object{error=string}
+// @Failure 500 {object} object{error=string}
+// @Router /v1/authors [get]
 func (h *AuthorHandler) ListAuthors(c *gin.Context) {
 	// Parse query parameters
 	limitStr := c.DefaultQuery("limit", "20")
@@ -77,6 +89,17 @@ func (h *AuthorHandler) ListAuthors(c *gin.Context) {
 }
 
 // GetAuthor handles GET /v1/authors/:id
+// @Summary Get an author by ID
+// @Description Retrieve a specific author by their ID
+// @Tags authors
+// @Accept json
+// @Produce json
+// @Param id path string true "Author ID"
+// @Success 200 {string} string "Author details"
+// @Failure 400 {object} object{error=string}
+// @Failure 404 {object} object{error=string}
+// @Failure 500 {object} object{error=string}
+// @Router /v1/authors/{id} [get]
 func (h *AuthorHandler) GetAuthor(c *gin.Context) {
 	authorID := c.Param("id")
 	if authorID == "" {
@@ -102,6 +125,19 @@ func (h *AuthorHandler) GetAuthor(c *gin.Context) {
 }
 
 // GetAuthorPapers handles GET /v1/authors/:id/papers
+// @Summary Get papers by an author
+// @Description Get a paginated list of papers by a specific author
+// @Tags authors
+// @Accept json
+// @Produce json
+// @Param id path string true "Author ID"
+// @Param limit query int false "Number of results to return (default: 20, max: 100)"
+// @Param offset query int false "Number of results to skip (default: 0)"
+// @Success 200 {string} string "Author papers with pagination info"
+// @Failure 400 {object} object{error=string}
+// @Failure 404 {object} object{error=string}
+// @Failure 500 {object} object{error=string}
+// @Router /v1/authors/{id}/papers [get]
 func (h *AuthorHandler) GetAuthorPapers(c *gin.Context) {
 	authorID := c.Param("id")
 	if authorID == "" {

@@ -1,3 +1,25 @@
+// Package main SciFIND Backend API
+//
+//	@title			SciFIND Backend API
+//	@version		1.0.0
+//	@description	This is the main API server for SciFIND, a scientific literature discovery platform. It provides endpoints for searching academic papers across multiple providers, managing papers and authors, and retrieving scientific literature metadata.
+//	@termsOfService	https://scifind.ai/terms
+//
+//	@contact.name	SciFIND Support
+//	@contact.email	support@scifind.ai
+//	@contact.url	https://scifind.ai/support
+//
+//	@license.name	MIT
+//	@license.url	https://opensource.org/licenses/MIT
+//
+//	@host		localhost:8080
+//	@BasePath	/
+//	@schemes	http https
+//
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						Authorization
+//	@description				API key for authentication
 package main
 
 import (
@@ -10,6 +32,8 @@ import (
 	"time"
 
 	"log/slog"
+	
+	_ "scifind-backend/docs" // Import generated Swagger docs
 )
 
 //go:generate wire

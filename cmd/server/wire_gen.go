@@ -26,6 +26,10 @@ import (
 	"time"
 )
 
+import (
+	_ "scifind-backend/docs"
+)
+
 // Injectors from wire.go:
 
 // InitializeApplication creates a fully configured application using Wire

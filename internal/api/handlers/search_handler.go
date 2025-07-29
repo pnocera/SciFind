@@ -48,7 +48,7 @@ func NewSearchHandler(service services.SearchServiceInterface, logger *slog.Logg
 // @Success 200 {object} services.SearchResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /search [get]
+// @Router /v1/search [get]
 func (h *SearchHandler) Search(c *gin.Context) {
 	// Generate request ID for tracking
 	requestID := uuid.New().String()
@@ -121,7 +121,7 @@ func (h *SearchHandler) Search(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /search/papers/{provider}/{id} [get]
+// @Router /v1/search/papers/{provider}/{id} [get]
 func (h *SearchHandler) GetPaper(c *gin.Context) {
 	provider := c.Param("provider")
 	paperID := c.Param("id")
@@ -175,7 +175,7 @@ func (h *SearchHandler) GetPaper(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} services.ProviderStatusResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /search/providers [get]
+// @Router /v1/search/providers [get]
 func (h *SearchHandler) GetProviders(c *gin.Context) {
 	status, err := h.service.GetProviderStatus(c.Request.Context())
 	if err != nil {
@@ -204,7 +204,7 @@ func (h *SearchHandler) GetProviders(c *gin.Context) {
 // @Param provider query string false "Specific provider name"
 // @Success 200 {object} services.ProviderMetricsResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /search/providers/metrics [get]
+// @Router /v1/search/providers/metrics [get]
 func (h *SearchHandler) GetProviderMetrics(c *gin.Context) {
 	metrics, err := h.service.GetProviderMetrics(c.Request.Context())
 	if err != nil {
@@ -252,7 +252,7 @@ func (h *SearchHandler) GetProviderMetrics(c *gin.Context) {
 // @Failure 400 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /search/providers/{provider}/configure [put]
+// @Router /v1/search/providers/{provider}/configure [put]
 func (h *SearchHandler) ConfigureProvider(c *gin.Context) {
 	provider := c.Param("provider")
 	if provider == "" {
