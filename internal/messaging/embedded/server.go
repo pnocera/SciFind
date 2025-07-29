@@ -77,8 +77,18 @@ func (es *EmbeddedServer) Start(ctx context.Context) error {
 	}
 
 	// Create server instance
+	es.logger.Info("Creating NATS server with options", 
+		slog.String("host", opts.Host),
+		slog.Int("port", opts.Port),
+		slog.Bool("jetstream", opts.JetStream),
+		slog.String("store_dir", opts.StoreDir))
+	
 	es.server, err = server.NewServer(opts)
 	if err != nil {
+		es.logger.Error("Failed to create NATS server", 
+			slog.String("error", err.Error()),
+			slog.String("host", es.config.Embedded.Host),
+			slog.Int("port", es.config.Embedded.Port))
 		return errors.NewMessagingError("failed to create NATS server", map[string]interface{}{
 			"error": err.Error(),
 			"host":  es.config.Embedded.Host,
@@ -98,34 +108,27 @@ func (es *EmbeddedServer) Start(ctx context.Context) error {
 		es.logger.Info("NATS server.Start() called")
 	}()
 
-	// Wait for server to be ready - give it a bit more time
+	// Wait for server to be ready for connections
 	es.logger.Info("Waiting for server to be ready for connections...")
 	
-	// Try a shorter timeout multiple times
-	for i := 0; i < 5; i++ {
-		ready := es.server.ReadyForConnections(2 * time.Second)
-		es.logger.Info("ReadyForConnections attempt", 
-			slog.Int("attempt", i+1),
-			slog.Bool("ready", ready),
-			slog.Bool("running", es.server.Running()))
+	// ReadyForConnections handles the waiting internally - use a reasonable timeout
+	timeout := 10 * time.Second
+	ready := es.server.ReadyForConnections(timeout)
+	
+	es.logger.Info("Server readiness check completed", 
+		slog.Bool("ready", ready),
+		slog.Bool("running", es.server.Running()),
+		slog.Duration("timeout", timeout))
+	
+	if !ready {
+		es.logger.Error("Server failed to become ready within timeout", 
+			slog.Bool("running", es.server.Running()),
+			slog.String("client_url", es.server.ClientURL()),
+			slog.String("server_id", es.server.ID()),
+			slog.Duration("timeout", timeout))
 		
-		if ready {
-			break
-		}
-		
-		if i == 4 {
-			// Final attempt failed
-			es.logger.Error("Server failed to become ready", 
-				slog.Bool("running", es.server.Running()),
-				slog.String("client_url", es.server.ClientURL()),
-				slog.String("server_id", es.server.ID()))
-			
-			// But let's try to continue anyway if the server is running
-			if !es.server.Running() {
-				return fmt.Errorf("embedded NATS server failed to start within timeout")
-			}
-			es.logger.Warn("Server is running but not ready - proceeding anyway")
-		}
+		// Return error - client should NOT connect if server is not ready
+		return fmt.Errorf("embedded NATS server failed to become ready within %v", timeout)
 	}
 
 	es.started = true
@@ -261,70 +264,29 @@ func (es *EmbeddedServer) buildServerOptions() (*server.Options, error) {
 	es.logger.Info("Building server options", 
 		slog.String("host", es.config.Embedded.Host),
 		slog.Int("port", es.config.Embedded.Port))
-		
+	
+	// Keep it simple - minimal configuration following NATS by Example pattern
 	opts := &server.Options{
-		Host:               es.config.Embedded.Host,
-		Port:               es.config.Embedded.Port,
-		ServerName:         "scifind-embedded",
-	}
-	
-	// Only add optional settings if they're reasonable
-	if es.config.Embedded.Limits.MaxConnections > 0 {
-		opts.MaxConn = es.config.Embedded.Limits.MaxConnections
-	}
-	
-	if es.config.PingInterval > 0 {
-		opts.PingInterval = time.Duration(es.config.PingInterval) * time.Second
-	}
-	
-	if es.config.MaxPingsOut > 0 {
-		opts.MaxPingsOut = es.config.MaxPingsOut
+		Host:       es.config.Embedded.Host,
+		Port:       es.config.Embedded.Port,
+		ServerName: "scifind-embedded",
 	}
 
-	// Parse payload and pending limits
-	if es.config.Embedded.Limits.MaxPayload != "" {
-		if maxPayload, err := parseByteSize(es.config.Embedded.Limits.MaxPayload); err == nil {
-			opts.MaxPayload = int32(maxPayload)
-		}
-	}
-
-	if es.config.Embedded.Limits.MaxPending != "" {
-		if maxPending, err := parseByteSize(es.config.Embedded.Limits.MaxPending); err == nil {
-			opts.MaxPending = maxPending
-		}
-	}
-
-	// Configure TLS if enabled
-	if es.config.TLS.Enabled {
-		tlsConfig, err := es.buildTLSConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to build TLS config: %w", err)
-		}
-		opts.TLSConfig = tlsConfig
-		opts.TLS = true
-	}
-
-	// Configure JetStream if enabled
+	// Configure JetStream if enabled - this is the key part
 	if es.config.JetStream.Enabled {
-		if err := es.configureJetStream(opts); err != nil {
-			return nil, fmt.Errorf("failed to configure JetStream: %w", err)
+		opts.JetStream = true
+		storeDir := es.config.JetStream.StoreDir
+		if storeDir == "" {
+			storeDir = "./jetstream"
 		}
-	}
-
-	// Configure clustering if specified
-	if es.config.Embedded.Cluster.Port > 0 {
-		es.configureCluster(opts)
-	}
-
-	// Configure monitoring if specified
-	if es.config.Embedded.Monitor.Port > 0 {
-		opts.HTTPHost = es.config.Embedded.Monitor.Host
-		opts.HTTPPort = es.config.Embedded.Monitor.Port
-	}
-
-	// Configure accounts
-	if es.config.Embedded.Accounts.SystemAccount != "" {
-		opts.SystemAccount = es.config.Embedded.Accounts.SystemAccount
+		
+		// Ensure store directory exists
+		if err := os.MkdirAll(storeDir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create JetStream store directory: %w", err)
+		}
+		
+		opts.StoreDir = storeDir
+		es.logger.Info("JetStream enabled", slog.String("store_dir", storeDir))
 	}
 
 	return opts, nil

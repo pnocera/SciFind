@@ -329,7 +329,7 @@ func setDefaults() {
 
 	// Provider defaults
 	viper.SetDefault("providers.arxiv.enabled", true)
-	viper.SetDefault("providers.arxiv.base_url", "http://export.arxiv.org/api/query")
+	viper.SetDefault("providers.arxiv.base_url", "https://export.arxiv.org/api/query")
 	viper.SetDefault("providers.arxiv.rate_limit", "3s")
 	viper.SetDefault("providers.arxiv.timeout", "30s")
 	

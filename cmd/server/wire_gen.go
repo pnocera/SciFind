@@ -243,7 +243,7 @@ func initializeProviders(manager providers.ProviderManager, logger *slog.Logger)
 
 	arxivConfig := providers.ProviderConfig{
 		Enabled:    true,
-		BaseURL:    "http://export.arxiv.org/api",
+		BaseURL:    "https://export.arxiv.org/api/query",
 		Timeout:    10 * time.Second,
 		MaxRetries: 3,
 	}

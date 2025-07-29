@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	defaultBaseURL = "http://export.arxiv.org/api/query"
+	defaultBaseURL = "https://export.arxiv.org/api/query"
 	providerName   = "arxiv"
 	maxResults     = 2000 // ArXiv API limit
 )
@@ -87,18 +87,32 @@ func (p *Provider) GetCapabilities() providers.ProviderCapabilities {
 
 // Search performs a search using the ArXiv API
 func (p *Provider) Search(ctx context.Context, query *providers.SearchQuery) (*providers.SearchResult, error) {
+	p.logger.Error("ArXiv search started", 
+		slog.String("query", query.Query),
+		slog.Bool("enabled", p.enabled),
+		slog.String("base_url", p.config.BaseURL))
+		
+	if !p.enabled {
+		p.logger.Error("ArXiv provider is disabled")
+		return nil, fmt.Errorf("ArXiv provider is disabled")
+	}
+		
 	start := time.Now()
 
 	// Build ArXiv query
 	arxivQuery, err := p.buildQuery(query)
 	if err != nil {
+		p.logger.Error("Failed to build ArXiv query", slog.String("error", err.Error()))
 		p.updateMetrics(false, time.Since(start), err)
 		return nil, fmt.Errorf("failed to build ArXiv query: %w", err)
 	}
 
+	p.logger.Error("ArXiv query built", slog.String("arxiv_query", arxivQuery))
+
 	// Make HTTP request
 	response, err := p.makeRequest(ctx, arxivQuery, query.Limit, query.Offset)
 	if err != nil {
+		p.logger.Error("ArXiv API request failed", slog.String("error", err.Error()))
 		p.updateMetrics(false, time.Since(start), err)
 		return nil, fmt.Errorf("ArXiv API request failed: %w", err)
 	}
@@ -303,6 +317,9 @@ func (p *Provider) makeRequest(ctx context.Context, query string, maxresults, st
 	params.Set("sortOrder", "descending")
 
 	reqURL := p.config.BaseURL + "?" + params.Encode()
+
+	// Log the full URL for debugging  
+	p.logger.Error("ArXiv API request URL", slog.String("url", reqURL))
 
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)

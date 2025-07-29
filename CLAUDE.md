@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Components
 
-**Dependency Injection:** Uses Google Wire for dependency injection. Main wiring is in `cmd/server/wire.go` with generated code in `wire_gen.go`. Run `go generate` to regenerate wire dependencies.
+**Dependency Injection:** Uses Google Wire for dependency injection. Main wiring is in `cmd/server/wire.go` with generated code in `wire_gen.go`. Run `go generate ./cmd/server` to regenerate wire dependencies.
 
 **Configuration:** Viper-based configuration system in `internal/config/`. Uses YAML files (config.yaml, configs/config.dev.yaml) with environment variable overrides using `SCIFIND_` prefix.
 

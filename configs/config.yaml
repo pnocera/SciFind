@@ -18,7 +18,7 @@ nats:
   # Embedded NATS server configuration
   embedded:
     enabled: true  # Enable embedded NATS server for single executable deployment
-    host: "0.0.0.0"
+    host: "127.0.0.1"
     port: 4222
     log_level: "INFO"
     log_file: ""
@@ -90,11 +90,12 @@ nats:
 providers:
   arxiv:
     enabled: true
-    base_url: "http://export.arxiv.org/api/query"
+    base_url: "https://export.arxiv.org/api/query"
     rate_limit: "3s"  # ArXiv requires 3 second delay between requests
     timeout: "30s"
   semantic_scholar:
     enabled: true
+    # api_key: "your_semantic_scholar_api_key_here"  # Get from: https://www.semanticscholar.org/product/api#api-key-form
   exa:
     enabled: false
   tavily:

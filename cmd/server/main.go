@@ -34,10 +34,12 @@ func main() {
 	if embeddedManager != nil && config.NATS.Embedded.Enabled {
 		logger.Info("Starting embedded NATS manager...")
 		if err := embeddedManager.Start(ctx); err != nil {
-			logger.Warn("Failed to start embedded NATS manager, falling back to external NATS",
+			logger.Error("Failed to start embedded NATS manager",
 				slog.String("error", err.Error()),
-				slog.String("url", config.NATS.URL))
-			// Continue with external NATS
+				slog.String("configured_host", config.NATS.Embedded.Host),
+				slog.Int("configured_port", config.NATS.Embedded.Port))
+			logger.Error("Server startup failed: embedded NATS is enabled but could not start")
+			os.Exit(1)
 		} else {
 			logger.Info("Embedded NATS manager started successfully")
 		}
