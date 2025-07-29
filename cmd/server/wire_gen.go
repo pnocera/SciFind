@@ -16,8 +16,14 @@ import (
 	"scifind-backend/internal/config"
 	"scifind-backend/internal/messaging"
 	"scifind-backend/internal/messaging/embedded"
+	"scifind-backend/internal/providers"
+	"scifind-backend/internal/providers/arxiv"
+	"scifind-backend/internal/providers/exa"
+	"scifind-backend/internal/providers/semantic_scholar"
+	"scifind-backend/internal/providers/tavily"
 	"scifind-backend/internal/repository"
 	"scifind-backend/internal/services"
+	"time"
 )
 
 // Injectors from wire.go:
@@ -42,13 +48,74 @@ func InitializeApplication(ctx context.Context) (*Application, func(), error) {
 	}
 	client := ProvideMessagingFromEmbedded(manager)
 	container := ProvideRepositories(database, logger)
-	servicesContainer := ProvideServices(container, client, logger)
+	providerManager := ProvideProviderManager(logger)
+	servicesContainer := ProvideServices(container, client, providerManager, logger)
 	handlersContainer := ProvideHandlers(servicesContainer, logger)
-	searchService := ProvideConcreteSearchService(container, client, logger)
+	searchService := ProvideConcreteSearchService(container, client, providerManager, logger)
 	paperService := ProvideConcretePaperService(container, client, logger)
 	authorService := ProvideConcreteAuthorService(container, client, logger)
 	healthHandler := ProvideConcreteHealthHandler(servicesContainer, logger)
-	engine := ProvideRouter(searchService, paperService, authorService, healthHandler, logger)
+	engine := ProvideRouter(searchService, paperService, authorService, healthHandler, providerManager, logger)
+	application := NewApplication(configConfig, database, client, manager, servicesContainer, handlersContainer, engine, logger)
+	return application, func() {
+	}, nil
+}
+
+// InitializeDevelopmentApplication creates an application instance for development
+func InitializeDevelopmentApplication(ctx context.Context) (*Application, func(), error) {
+	configConfig := ProvideDevelopmentConfig()
+	logger, err := ProvideLogger(configConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	database, err := ProvideDatabase(configConfig, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	manager, err := ProvideEmbeddedManager(configConfig, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	client := ProvideMessagingFromEmbedded(manager)
+	container := ProvideRepositories(database, logger)
+	providerManager := ProvideProviderManager(logger)
+	servicesContainer := ProvideServices(container, client, providerManager, logger)
+	handlersContainer := ProvideHandlers(servicesContainer, logger)
+	searchService := ProvideConcreteSearchService(container, client, providerManager, logger)
+	paperService := ProvideConcretePaperService(container, client, logger)
+	authorService := ProvideConcreteAuthorService(container, client, logger)
+	healthHandler := ProvideConcreteHealthHandler(servicesContainer, logger)
+	engine := ProvideRouter(searchService, paperService, authorService, healthHandler, providerManager, logger)
+	application := NewApplication(configConfig, database, client, manager, servicesContainer, handlersContainer, engine, logger)
+	return application, func() {
+	}, nil
+}
+
+// InitializeTestApplication creates an application instance for testing
+func InitializeTestApplication(ctx context.Context) (*Application, func(), error) {
+	configConfig := ProvideTestConfig()
+	logger, err := ProvideLogger(configConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	database, err := ProvideDatabase(configConfig, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	manager, err := ProvideEmbeddedManager(configConfig, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	client := ProvideMessagingFromEmbedded(manager)
+	container := ProvideRepositories(database, logger)
+	providerManager := ProvideProviderManager(logger)
+	servicesContainer := ProvideServices(container, client, providerManager, logger)
+	handlersContainer := ProvideHandlers(servicesContainer, logger)
+	searchService := ProvideConcreteSearchService(container, client, providerManager, logger)
+	paperService := ProvideConcretePaperService(container, client, logger)
+	authorService := ProvideConcreteAuthorService(container, client, logger)
+	healthHandler := ProvideConcreteHealthHandler(servicesContainer, logger)
+	engine := ProvideRouter(searchService, paperService, authorService, healthHandler, providerManager, logger)
 	application := NewApplication(configConfig, database, client, manager, servicesContainer, handlersContainer, engine, logger)
 	return application, func() {
 	}, nil
@@ -103,6 +170,7 @@ var MessagingProviderSet = wire.NewSet(
 
 var ServicesProviderSet = wire.NewSet(
 	ProvideServices,
+	ProvideProviderManager,
 )
 
 var HandlersProviderSet = wire.NewSet(
@@ -157,9 +225,67 @@ func ProvideMessagingFromEmbedded(embeddedManager *embedded.Manager) *messaging.
 	return embeddedManager.GetClient()
 }
 
+// ProvideProviderManager creates a provider manager instance
+func ProvideProviderManager(logger *slog.Logger) providers.ProviderManager {
+	managerConfig := providers.ManagerConfig{
+		AggregationStrategy: providers.StrategyMerge,
+		MaxConcurrency:      5,
+		Timeout:             30 * time.Second,
+	}
+	manager := providers.NewManager(logger, managerConfig)
+
+	initializeProviders(manager, logger)
+	return manager
+}
+
+// initializeProviders sets up all search providers
+func initializeProviders(manager providers.ProviderManager, logger *slog.Logger) {
+
+	arxivConfig := providers.ProviderConfig{
+		Enabled:    true,
+		BaseURL:    "http://export.arxiv.org/api",
+		Timeout:    10 * time.Second,
+		MaxRetries: 3,
+	}
+	arxivProvider := arxiv.NewProvider(arxivConfig, logger)
+	manager.RegisterProvider("arxiv", arxivProvider)
+
+	ssConfig := providers.ProviderConfig{
+		Enabled:    true,
+		BaseURL:    "https://api.semanticscholar.org/graph/v1",
+		Timeout:    15 * time.Second,
+		MaxRetries: 3,
+		APIKey:     "",
+	}
+	ssProvider := semantic_scholar.NewProvider(ssConfig, logger)
+	manager.RegisterProvider("semantic_scholar", ssProvider)
+
+	exaConfig := providers.ProviderConfig{
+		Enabled:    false,
+		BaseURL:    "https://api.exa.ai",
+		Timeout:    20 * time.Second,
+		MaxRetries: 3,
+		APIKey:     "",
+	}
+	exaProvider := exa.NewProvider(exaConfig, logger)
+	manager.RegisterProvider("exa", exaProvider)
+
+	tavilyConfig := providers.ProviderConfig{
+		Enabled:    false,
+		BaseURL:    "https://api.tavily.com",
+		Timeout:    25 * time.Second,
+		MaxRetries: 3,
+		APIKey:     "",
+	}
+	tavilyProvider := tavily.NewProvider(tavilyConfig, logger)
+	manager.RegisterProvider("tavily", tavilyProvider)
+
+	logger.Info("Search providers initialized", slog.Int("total_providers", len(manager.GetAllProviders())), slog.Int("enabled_providers", len(manager.GetEnabledProviders())))
+}
+
 // ProvideServices creates service instances
-func ProvideServices(repos *repository.Container, messaging2 *messaging.Client, logger *slog.Logger) *services.Container {
-	return services.NewContainer(repos, messaging2, logger)
+func ProvideServices(repos *repository.Container, messaging2 *messaging.Client, providerManager providers.ProviderManager, logger *slog.Logger) *services.Container {
+	return services.NewContainer(repos, messaging2, providerManager, logger)
 }
 
 // ProvideHandlers creates HTTP handler instances
@@ -168,8 +294,8 @@ func ProvideHandlers(services2 *services.Container, logger *slog.Logger) *handle
 }
 
 // ProvideConcreteSearchService creates a concrete search service
-func ProvideConcreteSearchService(repos *repository.Container, messaging2 *messaging.Client, logger *slog.Logger) *services.SearchService {
-	return services.NewSearchService(repos.Search, repos.Paper, messaging2, logger).(*services.SearchService)
+func ProvideConcreteSearchService(repos *repository.Container, messaging2 *messaging.Client, providerManager providers.ProviderManager, logger *slog.Logger) *services.SearchService {
+	return services.NewSearchService(repos.Search, repos.Paper, messaging2, providerManager, logger).(*services.SearchService)
 }
 
 // ProvideConcretePaperService creates a concrete paper service
@@ -193,6 +319,7 @@ func ProvideRouter(
 	paperService *services.PaperService,
 	authorService *services.AuthorService,
 	healthHandler *handlers.HealthHandler,
+	providerManager providers.ProviderManager,
 	logger *slog.Logger,
 ) *gin.Engine {
 	return api.NewRouter(
@@ -202,4 +329,36 @@ func ProvideRouter(
 		healthHandler,
 		logger,
 	)
+}
+
+// ProvideDevelopmentConfig creates a development configuration
+func ProvideDevelopmentConfig() *config.Config {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+
+		cfg = &config.Config{}
+		cfg.Server.Mode = "debug"
+		cfg.Server.Port = 8080
+		cfg.Database.Type = "sqlite"
+		cfg.Database.SQLite.Path = "./dev-scifind.db"
+		cfg.Database.SQLite.AutoMigrate = true
+		cfg.NATS.URL = "nats://localhost:4222"
+		cfg.NATS.Embedded.Enabled = true
+		cfg.Logging.Level = "debug"
+		cfg.Logging.Format = "text"
+	}
+	return cfg
+}
+
+// ProvideTestConfig creates a test configuration
+func ProvideTestConfig() *config.Config {
+	cfg := &config.Config{}
+	cfg.Server.Mode = "test"
+	cfg.Server.Port = 0
+	cfg.Database.Type = "sqlite"
+	cfg.Database.SQLite.Path = ":memory:"
+	cfg.Database.SQLite.AutoMigrate = true
+	cfg.Logging.Level = "error"
+	cfg.Logging.Format = "text"
+	return cfg
 }

@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 // CorsConfig contains CORS configuration
@@ -57,7 +58,6 @@ func DefaultCorsConfig() CorsConfig {
 // CorsMiddleware returns CORS middleware with configuration
 func CorsMiddleware(config CorsConfig) gin.HandlerFunc {
 	corsConfig := cors.Config{
-		AllowOrigins:     config.AllowedOrigins,
 		AllowMethods:     config.AllowedMethods,
 		AllowHeaders:     config.AllowedHeaders,
 		ExposeHeaders:    config.ExposedHeaders,
@@ -68,6 +68,8 @@ func CorsMiddleware(config CorsConfig) gin.HandlerFunc {
 	// Allow all origins in development
 	if gin.Mode() == gin.DebugMode {
 		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = config.AllowedOrigins
 	}
 
 	return cors.New(corsConfig)

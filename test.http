@@ -1,0 +1,97 @@
+### SciFIND Backend API Tests
+### Test file for HTTP requests to the SciFIND Backend server
+### Use with VS Code REST Client extension or similar tools
+
+@baseUrl = http://localhost:8080
+
+### Root endpoint - Basic server info
+GET {{baseUrl}}/
+
+### Health check endpoints
+GET {{baseUrl}}/health
+
+### Liveness probe
+GET {{baseUrl}}/health/live
+
+### Readiness probe  
+GET {{baseUrl}}/health/ready
+
+### API documentation endpoint
+GET {{baseUrl}}/docs
+
+### Search for papers - Basic query
+GET {{baseUrl}}/v1/search?query=quantum+computing&limit=5
+
+### Search with more parameters
+GET {{baseUrl}}/v1/search?query=machine+learning&limit=10&sort=relevance&year_from=2020
+
+### Search with specific provider filter
+GET {{baseUrl}}/v1/search?query=artificial+intelligence&providers=arxiv,semantic_scholar&limit=3
+
+### Get search providers list
+GET {{baseUrl}}/v1/search/providers
+
+### Get provider metrics
+GET {{baseUrl}}/v1/search/providers/metrics
+
+### Get specific paper by provider and ID (example - replace with actual ID)
+GET {{baseUrl}}/v1/search/papers/arxiv/2301.12345
+
+### List papers (local database)
+GET {{baseUrl}}/v1/papers
+
+### Get specific paper by ID (example - replace with actual UUID)
+GET {{baseUrl}}/v1/papers/550e8400-e29b-41d4-a716-446655440000
+
+### Create a new paper (POST request)
+POST {{baseUrl}}/v1/papers
+Content-Type: application/json
+
+{
+  "title": "Test Paper Title",
+  "abstract": "This is a test abstract for demonstration purposes.",
+  "authors": ["John Doe", "Jane Smith"],
+  "published_date": "2024-01-15T00:00:00Z",
+  "doi": "10.1234/test.doi.2024",
+  "url": "https://example.com/test-paper",
+  "categories": ["Computer Science", "Machine Learning"]
+}
+
+### Update paper (example - replace UUID with actual ID)
+PUT {{baseUrl}}/v1/papers/550e8400-e29b-41d4-a716-446655440000
+Content-Type: application/json
+
+{
+  "title": "Updated Test Paper Title",
+  "abstract": "This is an updated test abstract.",
+  "authors": ["John Doe", "Jane Smith", "Bob Johnson"]
+}
+
+### Delete paper (example - replace UUID with actual ID)
+DELETE {{baseUrl}}/v1/papers/550e8400-e29b-41d4-a716-446655440000
+
+### List authors
+GET {{baseUrl}}/v1/authors
+
+### Get specific author by ID (example - replace with actual UUID)
+GET {{baseUrl}}/v1/authors/550e8400-e29b-41d4-a716-446655440000
+
+### Get papers by specific author
+GET {{baseUrl}}/v1/authors/550e8400-e29b-41d4-a716-446655440000/papers
+
+### Configure provider (example for Semantic Scholar)
+PUT {{baseUrl}}/v1/search/providers/semantic_scholar/configure
+Content-Type: application/json
+
+{
+  "api_key": "your-api-key-here",
+  "rate_limit": "100/h",
+  "timeout": "30s",
+  "enabled": true
+}
+
+### Test error handling - Invalid endpoint
+GET {{baseUrl}}/v1/invalid-endpoint
+
+### Test error handling - Invalid paper ID format
+GET {{baseUrl}}/v1/papers/invalid-uuid-format

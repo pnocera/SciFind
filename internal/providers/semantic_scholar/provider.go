@@ -68,15 +68,15 @@ func (p *Provider) GetCapabilities() providers.ProviderCapabilities {
 		SupportsDateFilter:     true,
 		SupportsAuthFilter:     true,
 		SupportsCategoryFilter: true,
-		SupportsSort:          true,
+		SupportsSort:           true,
 
 		SupportedFields:    []string{"title", "abstract", "author", "venue", "year", "fieldsOfStudy"},
 		SupportedLanguages: []string{"en"},
 		SupportedFormats:   []string{"json"},
 
-		MaxResults:         maxResults,
-		MaxQueryLength:     1000,
-		RateLimit:         100, // 100 requests per second with API key
+		MaxResults:     maxResults,
+		MaxQueryLength: 1000,
+		RateLimit:      100, // 100 requests per second with API key
 
 		SupportsRealtime:    true,
 		SupportsExactMatch:  true,
@@ -173,7 +173,7 @@ func (p *Provider) HealthCheck(ctx context.Context) error {
 	testURL := fmt.Sprintf("%s/paper/search?query=test&limit=1", p.config.BaseURL)
 	_, err := p.makeRequest(ctx, testURL)
 	if err != nil {
-		return errors.NewHealthCheckError("Health check failed: " + err.Error(), "semantic_scholar")
+		return errors.NewHealthCheckError("Health check failed: "+err.Error(), "semantic_scholar")
 	}
 
 	p.logger.Debug("Semantic Scholar health check passed", slog.Duration("duration", time.Since(start)))
@@ -297,17 +297,82 @@ func (p *Provider) makeRequest(ctx context.Context, reqURL string) ([]byte, erro
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Semantic Scholar API returned status %d", resp.StatusCode)
-	}
-
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return body, nil
+	// Handle different HTTP status codes
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return body, nil
+	case http.StatusTooManyRequests:
+		// Rate limiting
+		retryAfter := resp.Header.Get("Retry-After")
+		var retryDuration time.Duration
+		if retryAfter != "" {
+			if seconds, err := strconv.Atoi(retryAfter); err == nil {
+				retryDuration = time.Duration(seconds) * time.Second
+			}
+		}
+		return nil, errors.NewRateLimitError(
+			fmt.Sprintf("Semantic Scholar API rate limit exceeded. Retry after: %s", retryAfter),
+			retryDuration,
+		)
+	case http.StatusUnauthorized:
+		return nil, errors.NewAuthenticationError(
+			"Invalid API key for Semantic Scholar",
+		)
+	case http.StatusForbidden:
+		return nil, errors.NewValidationError(
+			"Access forbidden to Semantic Scholar API",
+			"access",
+			"forbidden",
+		)
+	case http.StatusNotFound:
+		return nil, errors.NewNotFoundError(
+			"Resource not found in Semantic Scholar",
+			reqURL,
+		)
+	case http.StatusInternalServerError:
+		return nil, errors.NewInternalError(
+			"Semantic Scholar API internal server error",
+			nil,
+		)
+	case http.StatusServiceUnavailable:
+		return nil, errors.NewNetworkError(
+			"Semantic Scholar API service unavailable",
+			nil,
+		)
+	default:
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			// Try to parse error response
+			var apiError SemanticScholarError
+			if err := json.Unmarshal(body, &apiError); err == nil && apiError.Message != "" {
+				return nil, errors.NewValidationError(
+					fmt.Sprintf("Semantic Scholar API error: %s", apiError.Message),
+					"api",
+					"validation",
+				)
+			}
+			return nil, errors.NewValidationError(
+				fmt.Sprintf("Semantic Scholar API client error: %d %s", resp.StatusCode, resp.Status),
+				"status",
+				resp.StatusCode,
+			)
+		}
+		if resp.StatusCode >= 500 {
+			return nil, errors.NewInternalError(
+				fmt.Sprintf("Semantic Scholar API server error: %d %s", resp.StatusCode, resp.Status),
+				nil,
+			)
+		}
+		return nil, errors.NewInternalError(
+			fmt.Sprintf("Semantic Scholar API returned unexpected status %d", resp.StatusCode),
+			nil,
+		)
+	}
 }
 
 // parseSearchResponse parses the search response

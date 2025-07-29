@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"scifind-backend/internal/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 // HealthHandler handles health check endpoints
@@ -25,9 +26,9 @@ func NewHealthHandler(healthService services.HealthServiceInterface, logger *slo
 	return &HealthHandler{
 		healthService: healthService,
 		logger:        logger,
-		version:       "1.0.0", // TODO: inject from build
-		buildTime:     "unknown", // TODO: inject from build
-		gitCommit:     "unknown", // TODO: inject from build
+		version:       "1.0.0",       // TODO: inject from build
+		buildTime:     "unknown",     // TODO: inject from build
+		gitCommit:     "unknown",     // TODO: inject from build
 		environment:   "development", // TODO: inject from config
 	}
 }
@@ -46,10 +47,10 @@ type HealthStatus struct {
 
 // CheckResult represents the result of a health check
 type CheckResult struct {
-	Status    string        `json:"status"`
-	Duration  time.Duration `json:"duration"`
-	Error     string        `json:"error,omitempty"`
-	Metadata  interface{}   `json:"metadata,omitempty"`
+	Status   string        `json:"status"`
+	Duration time.Duration `json:"duration"`
+	Error    string        `json:"error,omitempty"`
+	Metadata interface{}   `json:"metadata,omitempty"`
 }
 
 var startTime = time.Now()
@@ -141,7 +142,7 @@ func (h *HealthHandler) Health(c *gin.Context) {
 	for _, check := range checks {
 		result := check.fn(ctx)
 		status.Checks[check.name] = result
-		
+
 		// Update overall status
 		if result.Status == "unhealthy" {
 			status.Status = "unhealthy"
@@ -156,7 +157,7 @@ func (h *HealthHandler) Health(c *gin.Context) {
 // checkDatabase verifies database connectivity and performance
 func (h *HealthHandler) checkDatabase(ctx context.Context) CheckResult {
 	start := time.Now()
-	
+
 	if h.healthService == nil {
 		return CheckResult{
 			Status:   "unhealthy",
@@ -164,7 +165,7 @@ func (h *HealthHandler) checkDatabase(ctx context.Context) CheckResult {
 			Error:    "health service not available",
 		}
 	}
-	
+
 	// Use health service to check database
 	err := h.healthService.Health(ctx)
 	if err != nil {
@@ -174,7 +175,7 @@ func (h *HealthHandler) checkDatabase(ctx context.Context) CheckResult {
 			Error:    "database health check failed: " + err.Error(),
 		}
 	}
-	
+
 	return CheckResult{
 		Status:   "healthy",
 		Duration: time.Since(start),
@@ -185,7 +186,7 @@ func (h *HealthHandler) checkDatabase(ctx context.Context) CheckResult {
 // checkNATS verifies NATS connectivity
 func (h *HealthHandler) checkNATS(ctx context.Context) CheckResult {
 	start := time.Now()
-	
+
 	if h.healthService == nil {
 		return CheckResult{
 			Status:   "degraded",
@@ -193,7 +194,7 @@ func (h *HealthHandler) checkNATS(ctx context.Context) CheckResult {
 			Error:    "health service not available",
 		}
 	}
-	
+
 	// For now, assume NATS is working if health service is available
 	// TODO: Add specific NATS health check to health service
 	return CheckResult{
@@ -206,19 +207,19 @@ func (h *HealthHandler) checkNATS(ctx context.Context) CheckResult {
 // checkResources verifies system resource availability
 func (h *HealthHandler) checkResources(ctx context.Context) CheckResult {
 	start := time.Now()
-	
+
 	// TODO: Implement resource checks
 	// - Memory usage
 	// - CPU usage
 	// - Disk space
 	// - File descriptors
-	
+
 	metadata := map[string]interface{}{
 		"goroutines": "unknown", // runtime.NumGoroutine()
 		"memory":     "unknown", // Get memory stats
 		"cpu":        "unknown", // Get CPU stats
 	}
-	
+
 	return CheckResult{
 		Status:   "healthy",
 		Duration: time.Since(start),
@@ -229,20 +230,20 @@ func (h *HealthHandler) checkResources(ctx context.Context) CheckResult {
 // checkExternalAPIs verifies external API connectivity
 func (h *HealthHandler) checkExternalAPIs(ctx context.Context) CheckResult {
 	start := time.Now()
-	
+
 	// TODO: Implement external API health checks
 	// - ArXiv API
 	// - Semantic Scholar API
 	// - Exa API
 	// - Tavily API
-	
+
 	metadata := map[string]interface{}{
 		"arxiv":            "unknown",
 		"semantic_scholar": "unknown",
 		"exa":              "unknown",
 		"tavily":           "unknown",
 	}
-	
+
 	return CheckResult{
 		Status:   "healthy",
 		Duration: time.Since(start),
@@ -259,8 +260,7 @@ func (h *HealthHandler) RegisterRoutes(router *gin.Engine) {
 		health.GET("", h.Health)
 		health.GET("/", h.Health)
 	}
-	
-	// Also register at root level for convenience
-	router.GET("/health", h.Health)
+
+	// Register ping endpoint at root level
 	router.GET("/ping", h.Liveness)
 }

@@ -30,6 +30,19 @@ func main() {
 	config := app.Config
 	embeddedManager := app.EmbeddedManager
 
+	// Start embedded NATS manager if available and enabled
+	if embeddedManager != nil && config.NATS.Embedded.Enabled {
+		logger.Info("Starting embedded NATS manager...")
+		if err := embeddedManager.Start(ctx); err != nil {
+			logger.Warn("Failed to start embedded NATS manager, falling back to external NATS",
+				slog.String("error", err.Error()),
+				slog.String("url", config.NATS.URL))
+			// Continue with external NATS
+		} else {
+			logger.Info("Embedded NATS manager started successfully")
+		}
+	}
+
 	// Set server address
 	addr := fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)
 	if addr == ":0" {
@@ -46,16 +59,11 @@ func main() {
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
 
-	// Start embedded NATS server if enabled
+	// Check if embedded NATS server is running (already started by Wire initialization)
 	var embeddedServerRunning bool
 	if embeddedManager != nil {
-		logger.Info("Starting embedded NATS manager")
-		if err := embeddedManager.Start(ctx); err != nil {
-			logger.Error("Failed to start embedded NATS manager", slog.String("error", err.Error()))
-			os.Exit(1)
-		}
 		embeddedServerRunning = embeddedManager.IsEmbeddedServerEnabled()
-		logger.Info("Embedded NATS manager started successfully", 
+		logger.Info("Embedded NATS manager status",
 			slog.Bool("embedded_server", embeddedServerRunning))
 	}
 

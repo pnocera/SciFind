@@ -10,10 +10,6 @@ import (
 	"scifind-backend/internal/messaging"
 	"scifind-backend/internal/models"
 	"scifind-backend/internal/providers"
-	"scifind-backend/internal/providers/arxiv"
-	"scifind-backend/internal/providers/exa"
-	"scifind-backend/internal/providers/semantic_scholar"
-	"scifind-backend/internal/providers/tavily"
 	"scifind-backend/internal/repository"
 )
 
@@ -31,77 +27,16 @@ func NewSearchService(
 	searchRepo repository.SearchRepository,
 	paperRepo repository.PaperRepository,
 	messaging *messaging.Client,
+	providerManager providers.ProviderManager,
 	logger *slog.Logger,
 ) SearchServiceInterface {
-	service := &SearchService{
-		searchRepo: searchRepo,
-		paperRepo:  paperRepo,
-		messaging:  messaging,
-		logger:     logger,
+	return &SearchService{
+		searchRepo:      searchRepo,
+		paperRepo:       paperRepo,
+		messaging:       messaging,
+		providerManager: providerManager,
+		logger:          logger,
 	}
-
-	// Initialize provider manager
-	service.initializeProviders()
-
-	return service
-}
-
-// initializeProviders sets up all search providers
-func (s *SearchService) initializeProviders() {
-	// Create provider manager
-	managerConfig := providers.ManagerConfig{
-		AggregationStrategy: providers.StrategyMerge,
-		MaxConcurrency:     5,
-		Timeout:           30 * time.Second,
-	}
-	s.providerManager = providers.NewManager(s.logger, managerConfig)
-
-	// Initialize ArXiv provider
-	arxivConfig := providers.ProviderConfig{
-		Enabled:    true,
-		BaseURL:    "http://export.arxiv.org/api",
-		Timeout:    10 * time.Second,
-		MaxRetries: 3,
-	}
-	arxivProvider := arxiv.NewProvider(arxivConfig, s.logger)
-	s.providerManager.RegisterProvider("arxiv", arxivProvider)
-
-	// Initialize Semantic Scholar provider
-	ssConfig := providers.ProviderConfig{
-		Enabled:    true,
-		BaseURL:    "https://api.semanticscholar.org/graph/v1",
-		Timeout:    15 * time.Second,
-		MaxRetries: 3,
-		APIKey:     "", // Optional for basic usage
-	}
-	ssProvider := semantic_scholar.NewProvider(ssConfig, s.logger)
-	s.providerManager.RegisterProvider("semantic_scholar", ssProvider)
-
-	// Initialize Exa provider (requires API key)
-	exaConfig := providers.ProviderConfig{
-		Enabled:    false, // Disabled by default, enable when API key is available
-		BaseURL:    "https://api.exa.ai",
-		Timeout:    20 * time.Second,
-		MaxRetries: 3,
-		APIKey:     "", // Must be configured
-	}
-	exaProvider := exa.NewProvider(exaConfig, s.logger)
-	s.providerManager.RegisterProvider("exa", exaProvider)
-
-	// Initialize Tavily provider (requires API key)
-	tavilyConfig := providers.ProviderConfig{
-		Enabled:    false, // Disabled by default, enable when API key is available
-		BaseURL:    "https://api.tavily.com",
-		Timeout:    25 * time.Second,
-		MaxRetries: 3,
-		APIKey:     "", // Must be configured
-	}
-	tavilyProvider := tavily.NewProvider(tavilyConfig, s.logger)
-	s.providerManager.RegisterProvider("tavily", tavilyProvider)
-
-	s.logger.Info("Search providers initialized",
-		slog.Int("total_providers", len(s.providerManager.GetAllProviders())),
-		slog.Int("enabled_providers", len(s.providerManager.GetEnabledProviders())))
 }
 
 // Search performs a search across configured providers
@@ -157,9 +92,9 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 
 	// Build response
 	response := &SearchResponse{
-		RequestID:            req.RequestID,
-		Query:                req.Query,
-		Papers:               enhancedPapers,
+		RequestID:           req.RequestID,
+		Query:               req.Query,
+		Papers:              enhancedPapers,
 		TotalCount:          result.TotalCount,
 		ResultCount:         len(enhancedPapers),
 		ProvidersUsed:       result.SuccessfulProviders,
@@ -246,7 +181,7 @@ func (s *SearchService) ConfigureProvider(ctx context.Context, name string, conf
 // Health checks the health of the search service and all providers
 func (s *SearchService) Health(ctx context.Context) error {
 	healthResults := s.providerManager.HealthCheckAll(ctx)
-	
+
 	var failedProviders []string
 	for name, err := range healthResults {
 		if err != nil {
@@ -303,6 +238,11 @@ func (s *SearchService) storeSearchResult(ctx context.Context, req *SearchReques
 }
 
 func (s *SearchService) publishSearchRequestEvent(ctx context.Context, req *SearchRequest) error {
+	if s.messaging == nil {
+		s.logger.Debug("Messaging client not available, skipping search request event")
+		return nil
+	}
+
 	event := messaging.NewSearchRequestEvent(
 		req.RequestID,
 		req.Query,
@@ -314,6 +254,11 @@ func (s *SearchService) publishSearchRequestEvent(ctx context.Context, req *Sear
 }
 
 func (s *SearchService) publishSearchCompletedEvent(ctx context.Context, req *SearchRequest, resp *SearchResponse, duration time.Duration, err error) error {
+	if s.messaging == nil {
+		s.logger.Debug("Messaging client not available, skipping search completed event")
+		return nil
+	}
+
 	var resultCount int
 	var providersUsed []string
 	var success bool

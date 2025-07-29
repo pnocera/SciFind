@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"scifind-backend/internal/messaging"
+	"scifind-backend/internal/providers"
 	"scifind-backend/internal/repository"
 )
 
@@ -18,10 +19,10 @@ type Container struct {
 }
 
 // NewContainer creates a new service container
-func NewContainer(repos *repository.Container, messaging *messaging.Client, logger *slog.Logger) *Container {
+func NewContainer(repos *repository.Container, messaging *messaging.Client, providerManager providers.ProviderManager, logger *slog.Logger) *Container {
 	return &Container{
 		Paper:     NewPaperService(repos.Paper, messaging, logger),
-		Search:    NewSearchService(repos.Search, repos.Paper, messaging, logger),
+		Search:    NewSearchService(repos.Search, repos.Paper, messaging, providerManager, logger),
 		Analytics: NewAnalyticsService(repos.Search, messaging, logger),
 		Health:    NewHealthService(repos, messaging, logger),
 		Author:    NewAuthorService(repos.Author, repos.Paper, messaging, logger),
