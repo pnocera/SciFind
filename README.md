@@ -1,283 +1,164 @@
-# SciFind 🧪
+# SciFIND Backend
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://hub.docker.com/r/scifind/backend)
-[![Go Version](https://img.shields.io/badge/go-1.24+-00ADD8.svg)](https://golang.org/dl/)
+A Go-based REST API for scientific literature search across multiple academic databases.
 
-> **Next-generation scientific paper search and discovery platform** - Unified API for searching across multiple academic databases with AI-ready integration
+## Overview
 
-## 🌟 Overview
+SciFIND Backend provides a unified API for searching scientific papers from ArXiv, Semantic Scholar, Exa, and Tavily. It aggregates results from multiple providers into a single response.
 
-SciFind Backend is a high-performance, production-ready scientific literature search engine that aggregates results from multiple academic databases into a single, unified API. Built with Go and designed for scale, it provides researchers, developers, and AI applications with instant access to millions of scientific papers through a single interface.
+## Requirements
 
-### Key Benefits
-- **Unified Search**: One API call searches across ArXiv, Semantic Scholar, Exa, and Tavily
-- **AI-Ready**: Native MCP (Model Context Protocol) support for seamless AI integration
-- **Production-Grade**: Built for reliability with circuit breakers, caching, and monitoring
-- **Cost-Optimized**: Intelligent rate limiting and caching to minimize API costs
-- **Developer-Friendly**: Comprehensive documentation, SDKs, and Docker support
+- Go 1.24+
+- PostgreSQL 15+ (production) or SQLite (development)
+- Docker (optional)
 
-## 🚀 Quick Start
+## Quick Start
 
-Get started in under 5 minutes:
+### Using Docker
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/scifind/backend.git
 cd scifind-backend
-
-# 2. Start with Docker Compose (includes all dependencies)
 docker-compose up -d
+```
 
-# 3. Test the API
+Test the API:
+```bash
 curl "http://localhost:8080/v1/search?query=quantum+computing&limit=5"
 ```
 
-**That's it!** The API is now running at `http://localhost:8080` with full functionality.
+### Local Development
 
-For detailed setup instructions, see our [Quick Start Guide](docs/QUICKSTART.md).
+```bash
+git clone https://github.com/scifind/backend.git
+cd scifind-backend
+go mod download
+go generate ./cmd/server
+go build -o scifind-server ./cmd/server
+./scifind-server
+```
 
-## ✨ Features
+## API Endpoints
 
-### 🔍 Multi-Provider Search
-- **ArXiv**: 2M+ papers in physics, mathematics, computer science
-- **Semantic Scholar**: 200M+ papers with semantic understanding
-- **Exa**: Neural search with web content understanding
-- **Tavily**: Real-time web search with advanced filtering
+- `GET /v1/search` - Search papers across providers
+- `GET /v1/papers` - List papers
+- `GET /v1/papers/{id}` - Get specific paper
+- `GET /v1/authors` - List authors
+- `GET /v1/authors/{id}` - Get author details
+- `GET /health` - Health check
+- `GET /swagger/index.html` - API documentation
 
-### 🧠 AI Integration
-- **MCP Protocol**: Native support for Model Context Protocol
-- **Structured Responses**: JSON-LD formatted for AI consumption
-- **Embeddings Ready**: Vector search capabilities (coming soon)
-- **Chat Integration**: Direct integration with Claude, GPT, and other AI assistants
+## Configuration
 
-### ⚡ Performance & Reliability
-- **Sub-second Response**: Parallel provider queries with intelligent caching
-- **Circuit Breakers**: Graceful degradation when providers are down
-- **Rate Limiting**: Provider-aware limits to prevent abuse
-- **Auto-scaling**: Kubernetes-ready with horizontal pod autoscaling
-
-### 📊 Analytics & Monitoring
-- **Real-time Metrics**: Prometheus-compatible metrics
-- **Usage Analytics**: Track search patterns and popular queries
-- **Provider Health**: Monitor API health and response times
-- **Cost Tracking**: Track API usage and costs per provider
-
-### 🔐 Enterprise Features
-- **API Key Management**: Secure key-based authentication
-- **Rate Limiting**: Per-key and global rate limits
-- **Audit Logging**: Complete audit trail for compliance
-- **Multi-tenancy**: Support for multiple organizations
-
-## 🏗️ Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Language** | Go 1.24+ | High-performance backend |
-| **Framework** | Gin | Fast HTTP router |
-| **Database** | PostgreSQL 15+ | Primary data storage |
-| **Cache** | NATS KV | Distributed caching |
-| **Messaging** | NATS.io | Event-driven architecture |
-| **ORM** | GORM v2 | Database abstraction |
-| **Container** | Docker | Containerization |
-| **Orchestration** | Kubernetes | Production deployment |
-| **Monitoring** | Prometheus + Grafana | Metrics and dashboards |
-| **Testing** | Testcontainers | Integration testing |
-
-## 📚 Documentation
-
-### 📖 [Quick Start Guide](docs/QUICKSTART.md)
-Perfect for getting started quickly with Docker or local development.
-
-### ⚙️ [Configuration Guide](docs/CONFIGURATION.md)
-Detailed configuration options for production deployments.
-
-### 🔌 [API Reference](docs/API_REFERENCE.md)
-Complete API documentation with examples and response schemas.
-
-### 🚀 [Deployment Guide](docs/DEPLOYMENT.md)
-Production deployment strategies for Docker, Kubernetes, and cloud platforms.
-
-### 🤖 [MCP Integration Guide](docs/MCP_INTEGRATION.md)
-How to integrate SciFind with AI assistants using the Model Context Protocol.
-
-## 🎯 Use Cases
-
-### For Researchers
-- **Literature Reviews**: Comprehensive search across all major databases
-- **Stay Updated**: Automated alerts for new papers in your field
-- **Citation Analysis**: Track paper impact and citations
-- **Collaboration**: Find researchers working on similar topics
-
-### For Developers
-- **API Integration**: Simple REST API for scientific search
-- **AI Applications**: Build AI-powered research assistants
-- **Data Pipelines**: Automated paper collection and processing
-- **Custom Frontends**: Build specialized research interfaces
-
-### For Organizations
-- **Research Portals**: Power institutional research platforms
-- **Knowledge Management**: Centralized paper discovery
-- **Competitive Intelligence**: Track research in specific domains
-- **Compliance**: Ensure access to latest scientific literature
-
-## 🔧 Configuration
-
-SciFind is highly configurable through environment variables or YAML configuration:
+Create a `config.yaml` file:
 
 ```yaml
-# Minimal configuration for development
 server:
   port: 8080
-  mode: "development"
+  mode: debug
 
 database:
+  type: sqlite
   sqlite:
-    path: "./scifind.db"
+    path: ./scifind.db
+    auto_migrate: true
 
-# Add your API keys for enhanced functionality
 providers:
+  arxiv:
+    enabled: true
   semantic_scholar:
-    api_key: "your_key_here"
+    enabled: true
+    api_key: ""  # Optional
   exa:
-    api_key: "your_key_here"
+    enabled: false
+    api_key: ""  # Required
   tavily:
-    api_key: "your_key_here"
+    enabled: false
+    api_key: ""  # Required
 ```
 
-See [Configuration Guide](docs/CONFIGURATION.md) for production-ready configurations.
+Environment variables override config file settings:
+- `SCIFIND_SERVER_PORT` - Server port
+- `SCIFIND_DATABASE_TYPE` - Database type
+- `SCIFIND_PROVIDERS_EXA_API_KEY` - Exa API key
+- `SCIFIND_PROVIDERS_TAVILY_API_KEY` - Tavily API key
 
-## 🧪 Testing
+## Development
 
-Our comprehensive test suite ensures reliability:
+### Build Commands
 
 ```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test-coverage
-
-# Run integration tests (requires Docker)
-make test-integration
-
-# Run benchmarks
-make benchmark
+go build ./cmd/server          # Build server
+go generate ./cmd/server       # Generate Wire dependency injection
+go test ./...                  # Run tests
+go run ./cmd/server            # Run server directly
 ```
 
-## 🤝 Contributing
+### Project Structure
 
-We welcome contributions from the community! Here's how to get started:
+```
+cmd/server/          # Main application
+internal/
+  api/               # HTTP handlers and routing
+  config/            # Configuration management
+  models/            # Data models
+  providers/         # External API providers
+  repository/        # Database layer
+  services/          # Business logic
+docs/                # Swagger documentation
+```
 
-### Quick Contribution Guide
+## Providers
 
-1. **Fork & Clone**
-   ```bash
-   git clone https://github.com/your-username/scifind-backend.git
-   cd scifind-backend
-   ```
+### ArXiv
+- No API key required
+- Physics, mathematics, computer science papers
+- Free access
 
-2. **Setup Development Environment**
-   ```bash
-   make dev-setup
-   ```
+### Semantic Scholar
+- API key optional for basic usage
+- Enhanced rate limits with API key
+- 200M+ academic papers
 
-3. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+### Exa
+- API key required
+- Neural search capabilities
+- Paid service
 
-4. **Make Changes & Test**
-   ```bash
-   make test
-   make lint
-   ```
+### Tavily
+- API key required
+- Real-time web search
+- Paid service
 
-5. **Submit Pull Request**
-   - Ensure all tests pass
-   - Add tests for new features
-   - Update documentation
-   - Follow our [Contributing Guidelines](CONTRIBUTING.md)
+## Deployment
 
-### Development Setup
+### Docker Production
 
 ```bash
-# Install dependencies
-go mod download
-
-# Start development services
-make dev-services
-
-# Run in development mode
-make dev
+docker build -t scifind-backend .
+docker run -p 8080:8080 -e SCIFIND_DATABASE_TYPE=postgres scifind-backend
 ```
 
-### Code Standards
-- Follow [Effective Go](https://golang.org/doc/effective_go.html)
-- Use `gofmt` for formatting
-- Add comprehensive tests (aim for >80% coverage)
-- Document all public APIs
-- Use conventional commit messages
+### Database Setup
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Port already in use**
+For PostgreSQL:
 ```bash
-# Check what's using port 8080
-lsof -i :8080
-# Or use a different port
-export SCIFIND_SERVER_PORT=8081
+createdb scifind
+export SCIFIND_DATABASE_TYPE=postgres
+export SCIFIND_DATABASE_POSTGRES_DSN="host=localhost user=postgres dbname=scifind sslmode=disable"
 ```
 
-**Database connection issues**
-```bash
-# Reset database
-make db-reset
-# Or use SQLite for development
-export SCIFIND_DATABASE_SQLITE_PATH="./dev.db"
-```
+## Architecture
 
-**Provider API errors**
-- Check API keys are set correctly
-- Verify rate limits haven't been exceeded
-- Check provider status pages
+The application follows clean architecture principles:
 
-### Getting Help
+- **Handlers**: HTTP request/response handling
+- **Services**: Business logic and provider coordination
+- **Repository**: Data persistence layer
+- **Providers**: External API integrations
 
-- 📖 **Documentation**: Check our [docs](docs/) first
-- 🐛 **Issues**: [Report bugs here](https://github.com/scifind/backend/issues)
-- 💬 **Discussions**: [Join our community](https://github.com/scifind/backend/discussions)
-- 📧 **Email**: support@scifind.org
+Dependency injection is managed using Google Wire.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **ArXiv** for providing open access to scientific papers
-- **Semantic Scholar** for their comprehensive academic API
-- **Exa** for neural search capabilities
-- **Tavily** for real-time web search
-- **Go Community** for excellent tooling and libraries
-
-## 🔗 Links
-
-- **Website**: [https://scifind.org](https://scifind.org)
-- **Documentation**: [https://docs.scifind.org](https://docs.scifind.org)
-- **API Playground**: [https://api.scifind.org](https://api.scifind.org)
-- **Docker Hub**: [https://hub.docker.com/r/scifind/backend](https://hub.docker.com/r/scifind/backend)
-- **Discord Community**: [https://discord.gg/scifind](https://discord.gg/scifind)
-
----
-
-<div align="center">
-  <p>
-    <strong>SciFind Backend</strong> - Empowering scientific discovery through unified search
-  </p>
-  <p>
-    Built with ❤️ by the SciFind team and contributors
-  </p>
-</div>
+MIT License
