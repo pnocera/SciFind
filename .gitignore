@@ -7,6 +7,10 @@
 *.dylib
 scifind-backend
 
+.claude/
+.roo/
+.roomodes
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -155,7 +159,6 @@ citation-cache/
 
 
 # Claude Flow generated files
-.claude/settings.local.json
 .mcp.json
 claude-flow.config.json
 .swarm/
