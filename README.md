@@ -163,6 +163,53 @@ The application follows clean architecture principles:
 
 Dependency injection is managed using Google Wire.
 
+## MCP Server
+
+SciFIND provides a Model Context Protocol (MCP) server for AI assistants to search scientific papers.
+
+### MCP Tools
+
+- `search` - Search scientific papers by query
+- `get_paper` - Get paper details by ID
+
+### Usage
+
+Start the MCP server via stdio:
+```bash
+go run ./cmd/server --mcp
+```
+
+Search example:
+```json
+{
+  "tool": "search",
+  "arguments": {
+    "query": "quantum computing"
+  }
+}
+```
+
+Get paper example:
+```json
+{
+  "tool": "get_paper",
+  "arguments": {
+    "id": "paper-id-123"
+  }
+}
+```
+
+### MCP Configuration
+
+The MCP server can be configured in `config.yaml`:
+
+```yaml
+mcp:
+  enabled: true
+  mode: stdio  # or http
+  port: 8081   # for http mode
+```
+
 ## License
 
 MIT License

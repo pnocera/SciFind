@@ -33,6 +33,8 @@ import (
 
 	"log/slog"
 	
+	"scifind-backend/internal/mcp"
+	"scifind-backend/internal/services"
 	_ "scifind-backend/docs" // Import generated Swagger docs
 )
 
@@ -93,9 +95,26 @@ func main() {
 			slog.Bool("embedded_server", embeddedServerRunning))
 	}
 
-	// Initialize MCP server if enabled (future enhancement)
-	mcpEnabled := false
-	logger.Info("MCP support will be available in future version")
+	// Initialize simple MCP server
+	var mcpServer *mcp.SimpleMCPServer
+	mcpEnabled := true
+	if mcpEnabled {
+		mcpServer = mcp.NewSimpleMCPServer(
+			app.Services.Search.(*services.SearchService),
+			app.Services.Paper.(*services.PaperService), 
+			app.Services.Author.(*services.AuthorService),
+			logger,
+		)
+		logger.Info("MCP server initialized with 2 core tools (KISS approach)")
+		
+		// Start MCP server in separate goroutine for stdio
+		go func() {
+			logger.Info("Starting MCP server on stdio...")
+			if err := mcpServer.ServeStdio(); err != nil {
+				logger.Error("MCP server failed", slog.String("error", err.Error()))
+			}
+		}()
+	}
 
 	// Start HTTP server in goroutine
 	go func() {
@@ -144,9 +163,9 @@ func main() {
 		logger.Info("HTTP server shutdown gracefully")
 	}
 
-	// MCP server shutdown (if implemented in future)
-	if mcpEnabled {
-		logger.Info("MCP server shutdown (placeholder)")
+	// MCP server shutdown
+	if mcpEnabled && mcpServer != nil {
+		logger.Info("MCP server shutdown - stdio connection will close automatically")
 	}
 
 	// Close database connection
